@@ -207,34 +207,48 @@ const Index = () => {
           });
         }
         
+        const searchEngines = [
+          {
+            title: `${searchQuery} - Google`,
+            url: `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
+            description: `Поиск "${searchQuery}" в Google для получения самых актуальных результатов`
+          },
+          {
+            title: `${searchQuery} - Яндекс`,
+            url: `https://yandex.ru/search/?text=${encodeURIComponent(searchQuery)}`,
+            description: `Поиск "${searchQuery}" в Яндекс - лучшие результаты для русскоязычного интернета`
+          },
+          {
+            title: `${searchQuery} - DuckDuckGo`,
+            url: `https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}`,
+            description: `Поиск "${searchQuery}" в DuckDuckGo - конфиденциальный поисковик без отслеживания`
+          },
+          {
+            title: `${searchQuery} - Bing`,
+            url: `https://www.bing.com/search?q=${encodeURIComponent(searchQuery)}`,
+            description: `Поиск "${searchQuery}" в Bing от Microsoft`
+          },
+          {
+            title: `${searchQuery} - Википедия`,
+            url: `https://ru.wikipedia.org/wiki/${encodeURIComponent(searchQuery)}`,
+            description: `Статья о "${searchQuery}" в свободной энциклопедии Википедия`
+          },
+          {
+            title: `${searchQuery} - YouTube`,
+            url: `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`,
+            description: `Видео о "${searchQuery}" на YouTube - обучающие ролики и обзоры`
+          },
+          {
+            title: `${searchQuery} - GitHub`,
+            url: `https://github.com/search?q=${encodeURIComponent(searchQuery)}`,
+            description: `Поиск репозиториев и кода по запросу "${searchQuery}" на GitHub`
+          }
+        ];
+        
         if (results.length === 0) {
-          results.push(
-            {
-              title: `${searchQuery} - DuckDuckGo`,
-              url: `https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}`,
-              description: `Поиск "${searchQuery}" в DuckDuckGo - конфиденциальный поисковик без отслеживания`
-            },
-            {
-              title: `${searchQuery} - Google`,
-              url: `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
-              description: `Поиск "${searchQuery}" в Google для получения самых актуальных результатов`
-            },
-            {
-              title: `${searchQuery} - Яндекс`,
-              url: `https://yandex.ru/search/?text=${encodeURIComponent(searchQuery)}`,
-              description: `Поиск "${searchQuery}" в Яндекс - лучшие результаты для русскоязычного интернета`
-            },
-            {
-              title: `${searchQuery} - Википедия`,
-              url: `https://ru.wikipedia.org/wiki/${encodeURIComponent(searchQuery)}`,
-              description: `Статья о "${searchQuery}" в свободной энциклопедии Википедия`
-            },
-            {
-              title: `${searchQuery} - YouTube`,
-              url: `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`,
-              description: `Видео о "${searchQuery}" на YouTube - обучающие ролики и обзоры`
-            }
-          );
+          results.push(...searchEngines);
+        } else {
+          results.push(...searchEngines);
         }
         
         setSearchResults(results);
@@ -524,27 +538,81 @@ const Index = () => {
                     <Icon name="Search" size={18} />
                   </Button>
                 </div>
-                <p className="text-sm text-muted-foreground">Найдено результатов: {searchResults.length}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">Найдено результатов: {searchResults.length}</p>
+                </div>
+                
+                <div className="mt-4 p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg border border-primary/20">
+                  <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <Icon name="Compass" size={16} className="text-primary" />
+                    Найти "{searchQuery}" в других поисковиках:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { name: 'Google', url: `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, icon: 'Search' },
+                      { name: 'Яндекс', url: `https://yandex.ru/search/?text=${encodeURIComponent(searchQuery)}`, icon: 'Search' },
+                      { name: 'DuckDuckGo', url: `https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}`, icon: 'Shield' },
+                      { name: 'Bing', url: `https://www.bing.com/search?q=${encodeURIComponent(searchQuery)}`, icon: 'Search' },
+                      { name: 'YouTube', url: `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`, icon: 'Video' },
+                      { name: 'Wikipedia', url: `https://ru.wikipedia.org/wiki/${encodeURIComponent(searchQuery)}`, icon: 'BookOpen' },
+                      { name: 'GitHub', url: `https://github.com/search?q=${encodeURIComponent(searchQuery)}`, icon: 'Github' }
+                    ].map((engine, idx) => (
+                      <Button
+                        key={idx}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 bg-background hover:bg-primary hover:text-primary-foreground transition-all"
+                        onClick={() => {
+                          navigateUrl(engine.url);
+                          toast.success(`Открыт ${engine.name}`);
+                        }}
+                      >
+                        <Icon name={engine.icon as any} size={14} />
+                        {engine.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </div>
               
               <div className="space-y-4">
-                {searchResults.map((result, index) => (
-                  <Card 
-                    key={index} 
-                    className="p-5 hover:shadow-md transition-shadow cursor-pointer group"
-                    onClick={() => {
-                      navigateUrl(result.url);
-                      setSearchResults([]);
-                      setSearchQuery('');
-                    }}
-                  >
-                    <div className="space-y-2">
-                      <h3 className="text-xl font-semibold text-primary group-hover:underline">{result.title}</h3>
-                      <p className="text-sm text-secondary break-all">{result.url}</p>
-                      <p className="text-muted-foreground">{result.description}</p>
-                    </div>
-                  </Card>
-                ))}
+                {searchResults.map((result, index) => {
+                  const isSearchEngine = result.title.includes('Google') || 
+                                       result.title.includes('Яндекс') || 
+                                       result.title.includes('DuckDuckGo') ||
+                                       result.title.includes('Bing') ||
+                                       result.title.includes('Википедия') ||
+                                       result.title.includes('YouTube') ||
+                                       result.title.includes('GitHub');
+                  
+                  return (
+                    <Card 
+                      key={index} 
+                      className={`p-5 hover:shadow-md transition-all cursor-pointer group ${
+                        isSearchEngine ? 'border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5' : ''
+                      }`}
+                      onClick={() => {
+                        navigateUrl(result.url);
+                        setSearchResults([]);
+                        setSearchQuery('');
+                      }}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          {isSearchEngine && (
+                            <Badge variant="default" className="bg-primary">
+                              <Icon name="Search" size={12} className="mr-1" />
+                              Поисковик
+                            </Badge>
+                          )}
+                          <h3 className="text-xl font-semibold text-primary group-hover:underline flex-1">{result.title}</h3>
+                        </div>
+                        <p className="text-sm text-secondary break-all">{result.url}</p>
+                        <p className="text-muted-foreground">{result.description}</p>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           )}
