@@ -54,6 +54,10 @@ const Index = () => {
     'FreshNeff Browser Console v1.0.0',
     'Ready to debug your applications'
   ]);
+  const [searchResults, setSearchResults] = useState<Array<{title: string, url: string, description: string}>>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [pageContent, setPageContent] = useState('');
+  const [isDefaultBrowser, setIsDefaultBrowser] = useState(false);
 
   const addTab = () => {
     const newId = String(tabs.length + 1);
@@ -110,17 +114,63 @@ const Index = () => {
 
   const searchInPage = () => {
     if (searchQuery.trim()) {
-      toast.info(`Поиск на странице: "${searchQuery}"`);
-      setConsoleLog([...consoleLog, `[Search] Page search: "${searchQuery}"`]);
+      const mockPageContent = `Демонстрационное содержимое страницы FreshNeff Browser. 
+      FreshNeff - это современный браузер на базе Chromium с полной поддержкой веб-стандартов.
+      Встроенные инструменты разработчика помогают создавать и отлаживать приложения.
+      Расширения позволяют настроить браузер под ваши нужды.`;
+      
+      setPageContent(mockPageContent);
+      const found = mockPageContent.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      if (found) {
+        toast.success(`Найдено совпадений на странице`);
+        setConsoleLog([...consoleLog, `[Search] Found "${searchQuery}" on page`]);
+      } else {
+        toast.info(`"${searchQuery}" не найдено на странице`);
+        setConsoleLog([...consoleLog, `[Search] "${searchQuery}" not found on page`]);
+      }
     }
   };
 
   const globalSearch = () => {
     if (searchQuery.trim()) {
-      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
-      setUrl(searchUrl);
-      toast.success('Глобальный поиск');
-      setConsoleLog([...consoleLog, `[Search] Global search: "${searchQuery}"`]);
+      setIsSearching(true);
+      
+      const mockResults = [
+        {
+          title: `${searchQuery} - Википедия`,
+          url: `https://wikipedia.org/wiki/${encodeURIComponent(searchQuery)}`,
+          description: `Подробная статья о ${searchQuery}. История, определение, примеры использования и связанные темы.`
+        },
+        {
+          title: `Что такое ${searchQuery}? Полное руководство`,
+          url: `https://example.com/guide/${encodeURIComponent(searchQuery)}`,
+          description: `Исчерпывающее руководство по ${searchQuery} для начинающих и профессионалов. Примеры, советы и лучшие практики.`
+        },
+        {
+          title: `${searchQuery}: новости и обновления`,
+          url: `https://news.example.com/${encodeURIComponent(searchQuery)}`,
+          description: `Последние новости и обновления о ${searchQuery}. Актуальная информация из надежных источников.`
+        },
+        {
+          title: `Купить ${searchQuery} онлайн - лучшие цены`,
+          url: `https://shop.example.com/search?q=${encodeURIComponent(searchQuery)}`,
+          description: `Большой выбор ${searchQuery} с доставкой. Сравнение цен, отзывы покупателей, гарантия качества.`
+        },
+        {
+          title: `Видео о ${searchQuery} - обучающие материалы`,
+          url: `https://videos.example.com/search/${encodeURIComponent(searchQuery)}`,
+          description: `Образовательные видео и курсы по ${searchQuery}. Пошаговые инструкции и практические примеры.`
+        }
+      ];
+      
+      setTimeout(() => {
+        setSearchResults(mockResults);
+        setIsSearching(false);
+        setUrl(`https://search.freshneff.dev/q=${encodeURIComponent(searchQuery)}`);
+        toast.success(`Найдено ${mockResults.length} результатов`);
+        setConsoleLog([...consoleLog, `[Search] Global search completed: "${searchQuery}" - ${mockResults.length} results`]);
+      }, 500);
     }
   };
 
@@ -135,6 +185,12 @@ const Index = () => {
     setDevToolsOpen(true);
     setDevToolsTab('inspector');
     toast.info('Инспектор элементов открыт');
+  };
+
+  const setAsDefaultBrowser = () => {
+    setIsDefaultBrowser(true);
+    toast.success('FreshNeff установлен браузером по умолчанию');
+    setConsoleLog([...consoleLog, '[System] FreshNeff set as default browser']);
   };
 
   return (
@@ -217,6 +273,27 @@ const Index = () => {
                     <Switch />
                   </div>
                 </Card>
+                <Card className="p-4">
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-base">Браузер по умолчанию</Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {isDefaultBrowser 
+                          ? 'FreshNeff является браузером по умолчанию' 
+                          : 'Сделайте FreshNeff основным браузером'}
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={setAsDefaultBrowser} 
+                      disabled={isDefaultBrowser}
+                      className="w-full"
+                      variant={isDefaultBrowser ? 'outline' : 'default'}
+                    >
+                      <Icon name="CheckCircle" size={16} className="mr-2" />
+                      {isDefaultBrowser ? 'Установлен по умолчанию' : 'Сделать по умолчанию'}
+                    </Button>
+                  </div>
+                </Card>
               </TabsContent>
 
               <TabsContent value="bookmarks">
@@ -297,53 +374,90 @@ const Index = () => {
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 bg-white dark:bg-gray-900 flex items-center justify-center relative overflow-hidden">
-          <div className="text-center space-y-4 z-10">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <Icon name="Compass" size={48} className="text-primary" />
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                FreshNeff Browser
-              </h1>
-            </div>
-            <p className="text-muted-foreground text-lg">Ваш новый Chromium-браузер</p>
-            
-            <div className="mt-8 max-w-2xl mx-auto">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Поиск в интернете или на странице..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && globalSearch()}
-                  className="flex-1"
-                />
-                <Button onClick={searchInPage} variant="outline">
-                  <Icon name="Search" size={16} className="mr-2" />
-                  На странице
+        <div className="flex-1 bg-white dark:bg-gray-900 flex items-center justify-center relative overflow-auto">
+          {searchResults.length === 0 ? (
+            <div className="text-center space-y-4 z-10 px-4">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <Icon name="Compass" size={48} className="text-primary" />
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  FreshNeff Browser
+                </h1>
+              </div>
+              <p className="text-muted-foreground text-lg">Ваш новый Chromium-браузер</p>
+              
+              <div className="mt-8 max-w-4xl mx-auto">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Поиск в интернете или на странице..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && globalSearch()}
+                    className="flex-1 h-14 text-lg px-6"
+                  />
+                  <Button onClick={searchInPage} variant="outline" size="lg" className="h-14 px-6">
+                    <Icon name="Search" size={20} className="mr-2" />
+                    На странице
+                  </Button>
+                  <Button onClick={globalSearch} size="lg" className="h-14 px-6" disabled={isSearching}>
+                    <Icon name="Globe" size={20} className="mr-2" />
+                    {isSearching ? 'Поиск...' : 'Глобально'}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-center gap-4">
+                <Button variant="outline" onClick={() => setDevToolsOpen(!devToolsOpen)}>
+                  <Icon name="Code" size={16} className="mr-2" />
+                  DevTools
                 </Button>
-                <Button onClick={globalSearch}>
-                  <Icon name="Globe" size={16} className="mr-2" />
-                  Глобально
+                <Button variant="outline" onClick={toggleTheme}>
+                  <Icon name="Palette" size={16} className="mr-2" />
+                  Сменить тему
                 </Button>
               </div>
             </div>
-
-            <div className="mt-8 flex justify-center gap-4">
-              <Button variant="outline" onClick={() => setDevToolsOpen(!devToolsOpen)}>
-                <Icon name="Code" size={16} className="mr-2" />
-                DevTools
-              </Button>
-              <Button variant="outline" onClick={toggleTheme}>
-                <Icon name="Palette" size={16} className="mr-2" />
-                Сменить тему
-              </Button>
+          ) : (
+            <div className="max-w-4xl mx-auto w-full p-8 space-y-6">
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-6">
+                  <Button variant="ghost" size="icon" onClick={() => setSearchResults([])}>
+                    <Icon name="ArrowLeft" size={20} />
+                  </Button>
+                  <Input
+                    placeholder="Поиск в интернете..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && globalSearch()}
+                    className="flex-1 h-12 text-base px-4"
+                  />
+                  <Button onClick={globalSearch} size="lg" disabled={isSearching}>
+                    <Icon name="Search" size={18} />
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">Найдено результатов: {searchResults.length}</p>
+              </div>
+              
+              <div className="space-y-4">
+                {searchResults.map((result, index) => (
+                  <Card key={index} className="p-5 hover:shadow-md transition-shadow cursor-pointer group">
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-semibold text-primary group-hover:underline">{result.title}</h3>
+                      <p className="text-sm text-secondary">{result.url}</p>
+                      <p className="text-muted-foreground">{result.description}</p>
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="absolute inset-0 opacity-5 pointer-events-none">
-            <div className="absolute top-10 left-10 w-32 h-32 rounded-full bg-primary blur-3xl animate-pulse" />
-            <div className="absolute bottom-20 right-20 w-40 h-40 rounded-full bg-secondary blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-            <div className="absolute top-1/2 left-1/2 w-36 h-36 rounded-full bg-primary blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-          </div>
+          {searchResults.length === 0 && (
+            <div className="absolute inset-0 opacity-5 pointer-events-none">
+              <div className="absolute top-10 left-10 w-32 h-32 rounded-full bg-primary blur-3xl animate-pulse" />
+              <div className="absolute bottom-20 right-20 w-40 h-40 rounded-full bg-secondary blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+              <div className="absolute top-1/2 left-1/2 w-36 h-36 rounded-full bg-primary blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+            </div>
+          )}
         </div>
 
         {devToolsOpen && (
