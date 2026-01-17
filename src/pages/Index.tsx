@@ -66,10 +66,13 @@ const Index = () => {
   };
 
   const closeTab = (id: string) => {
-    if (tabs.length === 1) return;
+    if (tabs.length === 1) {
+      toast.info('Нельзя закрыть последнюю вкладку');
+      return;
+    }
     const newTabs = tabs.filter(tab => tab.id !== id);
     setTabs(newTabs);
-    if (activeTab === id) {
+    if (activeTab === id && newTabs.length > 0) {
       setActiveTab(newTabs[0].id);
     }
   };
