@@ -135,45 +135,78 @@ const Index = () => {
     }
   };
 
-  const globalSearch = () => {
+  const globalSearch = async () => {
     if (searchQuery.trim()) {
       setIsSearching(true);
+      setConsoleLog([...consoleLog, `[Search] Starting search: "${searchQuery}"`]);
       
-      const mockResults = [
-        {
-          title: `${searchQuery} - Википедия`,
-          url: `https://wikipedia.org/wiki/${encodeURIComponent(searchQuery)}`,
-          description: `Подробная статья о ${searchQuery}. История, определение, примеры использования и связанные темы.`
-        },
-        {
-          title: `Что такое ${searchQuery}? Полное руководство`,
-          url: `https://example.com/guide/${encodeURIComponent(searchQuery)}`,
-          description: `Исчерпывающее руководство по ${searchQuery} для начинающих и профессионалов. Примеры, советы и лучшие практики.`
-        },
-        {
-          title: `${searchQuery}: новости и обновления`,
-          url: `https://news.example.com/${encodeURIComponent(searchQuery)}`,
-          description: `Последние новости и обновления о ${searchQuery}. Актуальная информация из надежных источников.`
-        },
-        {
-          title: `Купить ${searchQuery} онлайн - лучшие цены`,
-          url: `https://shop.example.com/search?q=${encodeURIComponent(searchQuery)}`,
-          description: `Большой выбор ${searchQuery} с доставкой. Сравнение цен, отзывы покупателей, гарантия качества.`
-        },
-        {
-          title: `Видео о ${searchQuery} - обучающие материалы`,
-          url: `https://videos.example.com/search/${encodeURIComponent(searchQuery)}`,
-          description: `Образовательные видео и курсы по ${searchQuery}. Пошаговые инструкции и практические примеры.`
+      try {
+        const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&format=json&no_html=1&skip_disambig=1`);
+        const data = await response.json();
+        
+        const results: Array<{title: string, url: string, description: string}> = [];
+        
+        if (data.AbstractText) {
+          results.push({
+            title: data.Heading || searchQuery,
+            url: data.AbstractURL || `https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}`,
+            description: data.AbstractText
+          });
         }
-      ];
-      
-      setTimeout(() => {
-        setSearchResults(mockResults);
+        
+        if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+          data.RelatedTopics.slice(0, 8).forEach((topic: any) => {
+            if (topic.Text && topic.FirstURL) {
+              results.push({
+                title: topic.Text.split(' - ')[0] || topic.Text.substring(0, 60),
+                url: topic.FirstURL,
+                description: topic.Text
+              });
+            }
+          });
+        }
+        
+        if (results.length === 0) {
+          results.push(
+            {
+              title: `${searchQuery} - DuckDuckGo`,
+              url: `https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}`,
+              description: `Поиск "${searchQuery}" в DuckDuckGo - конфиденциальный поисковик без отслеживания`
+            },
+            {
+              title: `${searchQuery} - Google`,
+              url: `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
+              description: `Поиск "${searchQuery}" в Google для получения самых актуальных результатов`
+            },
+            {
+              title: `${searchQuery} - Яндекс`,
+              url: `https://yandex.ru/search/?text=${encodeURIComponent(searchQuery)}`,
+              description: `Поиск "${searchQuery}" в Яндекс - лучшие результаты для русскоязычного интернета`
+            },
+            {
+              title: `${searchQuery} - Википедия`,
+              url: `https://ru.wikipedia.org/wiki/${encodeURIComponent(searchQuery)}`,
+              description: `Статья о "${searchQuery}" в свободной энциклопедии Википедия`
+            },
+            {
+              title: `${searchQuery} - YouTube`,
+              url: `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`,
+              description: `Видео о "${searchQuery}" на YouTube - обучающие ролики и обзоры`
+            }
+          );
+        }
+        
+        setSearchResults(results);
         setIsSearching(false);
-        setUrl(`https://search.freshneff.dev/q=${encodeURIComponent(searchQuery)}`);
-        toast.success(`Найдено ${mockResults.length} результатов`);
-        setConsoleLog([...consoleLog, `[Search] Global search completed: "${searchQuery}" - ${mockResults.length} results`]);
-      }, 500);
+        setUrl(`https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}`);
+        toast.success(`Найдено ${results.length} результатов`);
+        setConsoleLog(prev => [...prev, `[Search] Completed: "${searchQuery}" - ${results.length} results`]);
+      } catch (error) {
+        console.error('Search error:', error);
+        setIsSearching(false);
+        toast.error('Ошибка поиска. Попробуйте снова.');
+        setConsoleLog(prev => [...prev, `[Search] Error: ${error}`]);
+      }
     }
   };
 
