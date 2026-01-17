@@ -58,6 +58,8 @@ const Index = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [pageContent, setPageContent] = useState('');
   const [isDefaultBrowser, setIsDefaultBrowser] = useState(false);
+  const [history, setHistory] = useState<string[]>(['https://freshneff.dev']);
+  const [historyIndex, setHistoryIndex] = useState(0);
 
   const addTab = () => {
     const newId = String(tabs.length + 1);
@@ -77,24 +79,63 @@ const Index = () => {
     }
   };
 
-  const navigateUrl = () => {
-    toast.success('Навигация к ' + url);
-    setConsoleLog([...consoleLog, `[Navigation] Loading: ${url}`]);
+  const navigateUrl = (newUrl?: string) => {
+    const targetUrl = newUrl || url;
+    const updatedTabs = tabs.map(tab => 
+      tab.id === activeTab ? { ...tab, url: targetUrl, title: new URL(targetUrl).hostname } : tab
+    );
+    setTabs(updatedTabs);
+    setUrl(targetUrl);
+    
+    const newHistory = [...history.slice(0, historyIndex + 1), targetUrl];
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+    
+    toast.success('Переход: ' + new URL(targetUrl).hostname);
+    setConsoleLog(prev => [...prev, `[Navigation] Loading: ${targetUrl}`]);
   };
 
   const goBack = () => {
-    toast.info('Назад');
-    setConsoleLog([...consoleLog, '[Navigation] Going back']);
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      const previousUrl = history[newIndex];
+      setHistoryIndex(newIndex);
+      setUrl(previousUrl);
+      
+      const updatedTabs = tabs.map(tab => 
+        tab.id === activeTab ? { ...tab, url: previousUrl } : tab
+      );
+      setTabs(updatedTabs);
+      
+      toast.info('Назад: ' + new URL(previousUrl).hostname);
+      setConsoleLog(prev => [...prev, `[Navigation] Back to: ${previousUrl}`]);
+    } else {
+      toast.info('Это первая страница в истории');
+    }
   };
 
   const goForward = () => {
-    toast.info('Вперёд');
-    setConsoleLog([...consoleLog, '[Navigation] Going forward']);
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      const nextUrl = history[newIndex];
+      setHistoryIndex(newIndex);
+      setUrl(nextUrl);
+      
+      const updatedTabs = tabs.map(tab => 
+        tab.id === activeTab ? { ...tab, url: nextUrl } : tab
+      );
+      setTabs(updatedTabs);
+      
+      toast.info('Вперёд: ' + new URL(nextUrl).hostname);
+      setConsoleLog(prev => [...prev, `[Navigation] Forward to: ${nextUrl}`]);
+    } else {
+      toast.info('Это последняя страница в истории');
+    }
   };
 
   const refresh = () => {
-    toast.success('Обновление страницы');
-    setConsoleLog([...consoleLog, '[Navigation] Refreshing page']);
+    toast.success('Обновление: ' + new URL(url).hostname);
+    setConsoleLog(prev => [...prev, `[Navigation] Refreshing: ${url}`]);
   };
 
   const toggleExtension = (id: string) => {
@@ -198,7 +239,13 @@ const Index = () => {
         
         setSearchResults(results);
         setIsSearching(false);
-        setUrl(`https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}`);
+        const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}`;
+        setUrl(searchUrl);
+        
+        const newHistory = [...history.slice(0, historyIndex + 1), searchUrl];
+        setHistory(newHistory);
+        setHistoryIndex(newHistory.length - 1);
+        
         toast.success(`Найдено ${results.length} результатов`);
         setConsoleLog(prev => [...prev, `[Search] Completed: "${searchQuery}" - ${results.length} results`]);
       } catch (error) {
@@ -336,7 +383,14 @@ const Index = () => {
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-2">
                     {bookmarks.map(bookmark => (
-                      <Card key={bookmark.id} className="p-3 hover:bg-accent transition-colors cursor-pointer">
+                      <Card 
+                        key={bookmark.id} 
+                        className="p-3 hover:bg-accent transition-colors cursor-pointer"
+                        onClick={() => {
+                          navigateUrl(bookmark.url);
+                          toast.success(`Открыта закладка: ${bookmark.title}`);
+                        }}
+                      >
                         <div className="flex items-center gap-2">
                           <Icon name="Star" size={16} className="text-primary" />
                           <div className="flex-1 min-w-0">
@@ -475,10 +529,18 @@ const Index = () => {
               
               <div className="space-y-4">
                 {searchResults.map((result, index) => (
-                  <Card key={index} className="p-5 hover:shadow-md transition-shadow cursor-pointer group">
+                  <Card 
+                    key={index} 
+                    className="p-5 hover:shadow-md transition-shadow cursor-pointer group"
+                    onClick={() => {
+                      navigateUrl(result.url);
+                      setSearchResults([]);
+                      setSearchQuery('');
+                    }}
+                  >
                     <div className="space-y-2">
                       <h3 className="text-xl font-semibold text-primary group-hover:underline">{result.title}</h3>
-                      <p className="text-sm text-secondary">{result.url}</p>
+                      <p className="text-sm text-secondary break-all">{result.url}</p>
                       <p className="text-muted-foreground">{result.description}</p>
                     </div>
                   </Card>
